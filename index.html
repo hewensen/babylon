@@ -38,7 +38,7 @@
         </style>
     </head>
 <body>
-    <canvas id="renderCanvas"></canvas>
+    <div id="canvasZone"><canvas id="renderCanvas"></canvas></div>
     <script>
         var canvas = document.getElementById("renderCanvas");
 
@@ -55,33 +55,75 @@
         var sceneToRender = null;
         var createDefaultEngine = function() { return new BABYLON.Engine(canvas, true, { preserveDrawingBuffer: true, stencil: true,  disableWebGL2Support: false}); };
         var createScene = function () {
-    // This creates a basic Babylon Scene object (non-mesh)
-    var scene = new BABYLON.Scene(engine);
+    const scene = new BABYLON.Scene(engine);
 
-    // This creates and positions a free camera (non-mesh)
-    var camera = new BABYLON.FreeCamera("camera1", new BABYLON.Vector3(0, 5, -10), scene);
-
-    // This targets the camera to scene origin
-    camera.setTarget(BABYLON.Vector3.Zero());
-
-    // This attaches the camera to the canvas
+    const camera = new BABYLON.ArcRotateCamera("camera", -Math.PI / 2, Math.PI / 2.5, 3, new BABYLON.Vector3(0, 0, 0));
     camera.attachControl(canvas, true);
 
-    // This creates a light, aiming 0,1,0 - to the sky (non-mesh)
-    var light = new BABYLON.HemisphericLight("light", new BABYLON.Vector3(0, 1, 0), scene);
+    const light = new BABYLON.HemisphericLight("light", new BABYLON.Vector3(0, 1, 0));
 
-    // Default intensity is 1. Let's dim the light a small amount
-    light.intensity = 1;
+    const faceUV = [];
+    faceUV[0] = new BABYLON.Vector4(0.5, 0.0, 0.75, 1.0); //rear face
+    faceUV[1] = new BABYLON.Vector4(0.0, 0.0, 0.25, 1.0); //front face
+    faceUV[2] = new BABYLON.Vector4(0.25, 0, 0.5, 1.0); //right side
+    faceUV[3] = new BABYLON.Vector4(0.75, 0, 1.0, 1.0); //left side
+    const box = BABYLON.MeshBuilder.CreateBox("box", { faceUV: faceUV, wrap: true });
+    box.position.y = 0.5;
+    const boxMat = new BABYLON.StandardMaterial('boxMat');
+    boxMat.diffuseTexture = new BABYLON.Texture('https://doc.babylonjs.com/img/getstarted/cubehouse.png', scene);
+    box.material = boxMat;
 
-    // Our built-in 'sphere' shape.
-    var sphere = BABYLON.MeshBuilder.CreateSphere("sphere", {diameter: 2, segments: 32}, scene);
+    const ground = BABYLON.MeshBuilder.CreateGround('ground', { width: 100, height: 100 })
+    const groundMat = new BABYLON.StandardMaterial('groundMat');
+    groundMat.diffuseColor = BABYLON.Color3.Green();
+    ground.material = groundMat;
 
-    // Move the sphere upward 1/2 its height
-    sphere.position.y = 1;
+    const roof = BABYLON.MeshBuilder.CreateCylinder('roof', { diameter: 1.3, height: 1.2, tessellation: 3 });
+    roof.position.y = 1.22;
+    roof.scaling.x = 0.75;
+    roof.rotation.z = Math.PI / 2;
+    const roofMat = new BABYLON.StandardMaterial('roofMat');
+    roofMat.diffuseTexture = new BABYLON.Texture('https://assets.babylonjs.com/environments/roof.jpg', scene);
+    roof.material = roofMat;
 
-    // Our built-in 'ground' shape.
-    var ground = BABYLON.MeshBuilder.CreateGround("ground", {width: 6, height: 6}, scene);
+    const house = BABYLON.Mesh.MergeMeshes([box, roof], true, false, null, false, true);
+    house.scaling.x = 3;
+    house.scaling.y = 1;
+    house.scaling.z = 1;
+    house.position.x = 3;
 
+    const houses = [];
+
+    const places = []; //each entry is an array [house type, rotation, x, z]
+    places.push([1, -Math.PI / 16, -6.8, 2.5 ]);
+    places.push([2, -Math.PI / 16, -4.5, 3 ]);
+    places.push([2, -Math.PI / 16, -1.5, 4 ]);
+    places.push([2, -Math.PI / 3, 1.5, 6 ]);
+    places.push([2, 15 * Math.PI / 16, -6.4, -1.5 ]);
+    places.push([1, 15 * Math.PI / 16, -4.1, -1 ]);
+    places.push([2, 15 * Math.PI / 16, -2.1, -0.5 ]);
+    places.push([1, 5 * Math.PI / 4, 0, -1 ]);
+    places.push([1, Math.PI + Math.PI / 2.5, 0.5, -3 ]);
+    places.push([2, Math.PI + Math.PI / 2.1, 0.75, -5 ]);
+    places.push([1, Math.PI + Math.PI / 2.25, 0.75, -7 ]);
+    places.push([2, Math.PI / 1.9, 4.75, -1 ]);
+    places.push([1, Math.PI / 1.95, 4.5, -3 ]);
+    places.push([2, Math.PI / 1.9, 4.75, -5 ]);
+    places.push([1, Math.PI / 1.9, 4.75, -7 ]);
+    places.push([2, -Math.PI / 3, 5.25, 2 ]);
+    places.push([1, -Math.PI / 3, 6, 4 ]);
+
+    for (let i = 0; i < places.length; i++) {
+        if (places[i][0] === 1) {
+            houses[i] = house.createInstance("house" + i);
+        }
+        else {
+            houses[i] = house.createInstance("house" + i);
+        }
+        houses[i].rotation.y = places[i][1];
+        houses[i].position.x = places[i][2];
+        houses[i].position.z = places[i][3];
+    }
     return scene;
 };
                 window.initFunction = async function() {
