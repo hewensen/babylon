@@ -54,76 +54,43 @@
         var scene = null;
         var sceneToRender = null;
         var createDefaultEngine = function() { return new BABYLON.Engine(canvas, true, { preserveDrawingBuffer: true, stencil: true,  disableWebGL2Support: false}); };
-        var createScene = function () {
+        const createScene = function () {
+    
     const scene = new BABYLON.Scene(engine);
 
-    const camera = new BABYLON.ArcRotateCamera("camera", -Math.PI / 2, Math.PI / 2.5, 3, new BABYLON.Vector3(0, 0, 0));
+    const camera = new BABYLON.ArcRotateCamera("camera", -Math.PI / 1.5, Math.PI / 2.2, 15, new BABYLON.Vector3(0, 0, 0));
+    camera.upperBetaLimit = Math.PI / 2.2;
     camera.attachControl(canvas, true);
+    const light = new BABYLON.HemisphericLight("light", new BABYLON.Vector3(1, 1, 0));
 
-    const light = new BABYLON.HemisphericLight("light", new BABYLON.Vector3(0, 1, 0));
+    const fountainOutline = [
+		new BABYLON.Vector3(0, 0, 0),
+		new BABYLON.Vector3(0.5, 0, 0),
+        new BABYLON.Vector3(0.5, 0.2, 0),
+		new BABYLON.Vector3(0.4, 0.2, 0),
+        new BABYLON.Vector3(0.4, 0.05, 0),
+        new BABYLON.Vector3(0.05, 0.1, 0),
+		new BABYLON.Vector3(0.05, 0.8, 0),
+		new BABYLON.Vector3(0.15, 0.9, 0)
+	];
+	
+	//Create lathed fountain
+	const fountain = BABYLON.MeshBuilder.CreateLathe("fountain", {shape: fountainOutline, sideOrientation: BABYLON.Mesh.DOUBLESIDE});
+    fountain.position.x = -4;
+    fountain.position.z = -6;
+      
+    //Skybox
+    const skybox = BABYLON.MeshBuilder.CreateBox("skyBox", {size:150}, scene);
+	  const skyboxMaterial = new BABYLON.StandardMaterial("skyBox", scene);
+	  skyboxMaterial.backFaceCulling = false;
+	  skyboxMaterial.reflectionTexture = new BABYLON.CubeTexture("textures/skybox", scene);
+	  skyboxMaterial.reflectionTexture.coordinatesMode = BABYLON.Texture.SKYBOX_MODE;
+	  skyboxMaterial.diffuseColor = new BABYLON.Color3(0, 0, 0);
+	  skyboxMaterial.specularColor = new BABYLON.Color3(0, 0, 0);
+	  skybox.material = skyboxMaterial;
 
-    const faceUV = [];
-    faceUV[0] = new BABYLON.Vector4(0.5, 0.0, 0.75, 1.0); //rear face
-    faceUV[1] = new BABYLON.Vector4(0.0, 0.0, 0.25, 1.0); //front face
-    faceUV[2] = new BABYLON.Vector4(0.25, 0, 0.5, 1.0); //right side
-    faceUV[3] = new BABYLON.Vector4(0.75, 0, 1.0, 1.0); //left side
-    const box = BABYLON.MeshBuilder.CreateBox("box", { faceUV: faceUV, wrap: true });
-    box.position.y = 0.5;
-    const boxMat = new BABYLON.StandardMaterial('boxMat');
-    boxMat.diffuseTexture = new BABYLON.Texture('https://doc.babylonjs.com/img/getstarted/cubehouse.png', scene);
-    box.material = boxMat;
+    BABYLON.SceneLoader.ImportMeshAsync("", "https://assets.babylonjs.com/meshes/", "valleyvillage.glb");
 
-    const ground = BABYLON.MeshBuilder.CreateGround('ground', { width: 100, height: 100 })
-    const groundMat = new BABYLON.StandardMaterial('groundMat');
-    groundMat.diffuseColor = BABYLON.Color3.Green();
-    ground.material = groundMat;
-
-    const roof = BABYLON.MeshBuilder.CreateCylinder('roof', { diameter: 1.3, height: 1.2, tessellation: 3 });
-    roof.position.y = 1.22;
-    roof.scaling.x = 0.75;
-    roof.rotation.z = Math.PI / 2;
-    const roofMat = new BABYLON.StandardMaterial('roofMat');
-    roofMat.diffuseTexture = new BABYLON.Texture('https://assets.babylonjs.com/environments/roof.jpg', scene);
-    roof.material = roofMat;
-
-    const house = BABYLON.Mesh.MergeMeshes([box, roof], true, false, null, false, true);
-    house.scaling.x = 3;
-    house.scaling.y = 1;
-    house.scaling.z = 1;
-    house.position.x = 3;
-
-    const houses = [];
-
-    const places = []; //each entry is an array [house type, rotation, x, z]
-    places.push([1, -Math.PI / 16, -6.8, 2.5 ]);
-    places.push([2, -Math.PI / 16, -4.5, 3 ]);
-    places.push([2, -Math.PI / 16, -1.5, 4 ]);
-    places.push([2, -Math.PI / 3, 1.5, 6 ]);
-    places.push([2, 15 * Math.PI / 16, -6.4, -1.5 ]);
-    places.push([1, 15 * Math.PI / 16, -4.1, -1 ]);
-    places.push([2, 15 * Math.PI / 16, -2.1, -0.5 ]);
-    places.push([1, 5 * Math.PI / 4, 0, -1 ]);
-    places.push([1, Math.PI + Math.PI / 2.5, 0.5, -3 ]);
-    places.push([2, Math.PI + Math.PI / 2.1, 0.75, -5 ]);
-    places.push([1, Math.PI + Math.PI / 2.25, 0.75, -7 ]);
-    places.push([2, Math.PI / 1.9, 4.75, -1 ]);
-    places.push([1, Math.PI / 1.95, 4.5, -3 ]);
-    places.push([2, Math.PI / 1.9, 4.75, -5 ]);
-    places.push([1, Math.PI / 1.9, 4.75, -7 ]);
-    places.push([2, -Math.PI / 3, 5.25, 2 ]);
-    places.push([1, -Math.PI / 3, 6, 4 ]);
-
-    for (let i = 0; i < places.length; i++) {
-        if (places[i][0] === 1) {
-            houses[i] = house.createInstance("house" + i);
-        }
-        else {
-            houses[i] = house.createInstance("house" + i);
-        }
-        houses[i].rotation.y = places[i][1];
-        houses[i].position.x = places[i][2];
-        houses[i].position.z = places[i][3];
-    }
     return scene;
 };
                 window.initFunction = async function() {
